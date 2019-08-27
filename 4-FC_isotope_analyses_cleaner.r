@@ -1,21 +1,20 @@
 # FC isotope analyses cleaner
 
-setwd("~/Documents/2018-2019/Fungal competition/")
+# setwd("~/Documents/2018-2019/Fungal competition/")
 
 require(tidyverse)
 require(cowplot)
 require(agricolae) # for automatic Tukey labels
 
 # allisotopes = read_csv("isotope_data_two_rows_per_plant.csv")
-allisotopes = read_csv("isotope_data_two_rows_per_plant_July.csv")
+allisotopes = read_csv("./FCdata/isotope_data_two_rows_per_plant_July.csv")
 # correcting a spreadsheet error
 allisotopes$Actual_fungi_at_harvest[allisotopes$Plant == 6033] = "SUIPU/SUIPU"
 
-isotopes_forN = read_csv("isotope_data_one_row_per_plant_July.csv")
-minimally_processed_isotopes = read_csv("Cleaned_processed_FC_isotope_data_July.csv")
-percent_col = read_csv("percent_colonization_and_mass_data_by_compartment.csv")
-metadata_byplant = read_csv("percent_col_and_mass_data_by_plant.csv")
-colandmass = read_csv("percent_colonization_and_mass_data_by_compartment.csv")
+isotopes_forN = read_csv("./FCdata/isotope_data_one_row_per_plant_July.csv")
+minimally_processed_isotopes = read_csv("./FCdata/Cleaned_processed_FC_isotope_data_July.csv")
+percent_col = read_csv("./FCdata/percent_colonization_and_mass_data_by_compartment.csv")
+metadata_byplant = read_csv("./FCdata/percent_col_and_mass_data_by_plant.csv")
 # mydata = read_csv("minimally_processed_isotope_data.csv")
 
 allisotopes = rename(allisotopes, compartment_fungus = Actual_fungus_by_compartment)
@@ -60,7 +59,7 @@ together$mycofungus = recode(together$mycofungus,
                                      "SUIPU" = "Sp",
                                      "THETE" = "Tt")
 
-# write_csv(together, "isotopes_together_as_analyzed.csv")
+write_csv(together, "isotopes_together_as_analyzed.csv")
 
 #### Checking replication so I can reanalyze samples ####
 
@@ -84,7 +83,7 @@ fullincompletes = left_join(fullincompletes, select(metadata_byplant, Plant, Bat
 fullincompletes = select(fullincompletes, Batch, everything())
 
 
-write_csv(fullincompletes, "plants_needing_other_side.csv")
+# write_csv(fullincompletes, "plants_needing_other_side.csv")
 
 missingnm = formissing[is.na(formissing$uncolonized_roots.APE13C),]
 missingnm$missing = "uncolonized"
@@ -98,14 +97,14 @@ tosearch = select(missingsomething, Plant, Side, Fungi, N_level, compartment_fun
 batchinfo = left_join(tosearch, select(metadata_byplant, Plant, Batch))
 batchinfo = select(batchinfo, Batch, everything())
 
-write_csv(batchinfo, "samples_to_tin_and_submit.csv")
+# write_csv(batchinfo, "samples_to_tin_and_submit.csv")
 
 notmissing = formissing[!formissing$Plant %in% batchinfo$Plant,]
 notmissing = notmissing[!duplicated(notmissing$Plant),]
 # 64 complete plants?
 
 currentreplication = notmissing %>% group_by(Fungi, N_level) %>% summarize(totalreps = n())
-write_csv(currentreplication, "isotope_replication_summary_July.csv")
+# write_csv(currentreplication, "isotope_replication_summary_July.csv")
 
 #### How much did the N-15 label leak across mesh panels? ####
 
@@ -200,7 +199,7 @@ onlyhigh15N = subset(together,
 # metabolically active developmental stage,
 # and exclude it from analysis for now.
 
-outlier = colandmass[colandmass$Plant == 6041,]
+outlier = percent_col[percent_col$Plant == 6041,]
 # Very low colonization on the side receiving the label,
 # but took up a ton.
 # I think this fungus was ACTIVELY growing and courting the plant.

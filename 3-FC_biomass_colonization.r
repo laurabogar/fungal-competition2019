@@ -9,7 +9,7 @@ require(agricolae)
 ### Need to change fungi codes to match Tt/Sp from manuscript
 
 fungcomp = read_csv("./FCdata/Fungal_competition_FC_seedling_masses_final.csv")
-metadata = read_csv("Fungal_competition_plant_tracking.csv")
+metadata = read_csv("./FCdata/Fungal_competition_plant_tracking.csv")
 
 fungcomp = select(fungcomp, Page:Notes2)
 
@@ -372,7 +372,7 @@ tomerge = select(metadata, Plant, Side, N_level, compartment_fungus = Actual_fun
 
 wide_bycompt = left_join(wide_bycompt, tomerge)
 
-write_csv(wide_bycompt, "percent_colonization_and_mass_data_by_compartment.csv")
+write_csv(wide_bycompt, "./FCdata/percent_colonization_and_mass_data_by_compartment.csv")
 
 #### Did plant repress colonization by less helpful fungus? ####
 
