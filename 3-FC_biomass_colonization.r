@@ -113,6 +113,9 @@ plantleveldata = plantleveldata[!is.na(plantleveldata$plant_response),]
 plantleveldata = rename(plantleveldata, Fungi = Actual_fungi_at_harvest)
 
 plantleveldata = subset(plantleveldata, N_level != "None")
+
+# write_csv(plantleveldata, "./FCdata/percent_col_and_mass_by_plant_including_mixed.csv")
+
 plantleveldata = plantleveldata[-grep("MIXED", plantleveldata$Fungi),]
 plantleveldata = plantleveldata[-grep("FAILED", plantleveldata$Fungi),]
 plantleveldata = subset(plantleveldata, Fungi != "SUIPU" & Fungi != "THETE") # failed splits
@@ -368,7 +371,7 @@ for (i in 1:nrow(wide_bycompt)) {
 }
 
 wide_bycompt = rename(wide_bycompt, Plant = Plant_number)
-tomerge = select(metadata, Plant, Side, N_level, compartment_fungus = Actual_fungus_by_compartment, competitors = Actual_fungi_at_harvest, enriched)
+tomerge = select(metadata, Plant, Side, N_level, Batch, compartment_fungus = Actual_fungus_by_compartment, competitors = Actual_fungi_at_harvest, enriched)
 
 wide_bycompt = left_join(wide_bycompt, tomerge)
 
