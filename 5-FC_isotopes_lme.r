@@ -4,6 +4,13 @@
 
 # This tutorial may be helpful: https://ourcodingclub.github.io/2017/03/15/mixed-models.html
 # This is also good: http://www.bodowinter.com/tutorial/bw_LME_tutorial.pdf
+# Hmm... https://stats.stackexchange.com/questions/35071/what-is-rank-deficiency-and-how-to-deal-with-it
+
+# My model is consistently rank deficient.
+# This seems unnecessarily annoying, given
+# that the patterns I can see appear to be reasonably clear.
+
+# Consider Bayesian approach? https://stats.stackexchange.com/questions/368272/why-does-logistic-regression-doesnt-give-the-same-result-as-a-chi-square-test-w
 
 # Libraries needed:
 require(tidyverse)
@@ -63,13 +70,22 @@ for (i in 1:nrow(together)) {
   }
 }
 
+together$mycoC13ppmexcess = together$mycorrhizas.APE13C * (10^4)
+
+together = together[together$enriched != 0,]
+
+min(together$mycoC13ppmexcess[!is.na(together$mycoC13ppmexcess)])
+
+together$transmycoC13 = (log(together$mycoC13ppmexcess))
+
 # Shouldn't model mycorrhiza-specific phenomena with NM plants
 
-nonm = together[!together$compartment_fungus == "None",]
-
+nonm = together[!is.na(together$mycorrhizas.APE13C),]
+nonm = subset(nonm, compartment_fungus != "None")
 # Should I exclude microcosms with mixed cultures?
 
-excluding_mixed = together[-grep("MIXED", together$competitors),]
+excluding_mixed = nonm[-grep("MIXED", nonm$competitors),]
+# excluding_mixed$versus = relevel(excluding_mixed$versus, levels = c("None", "Sp", "Tt"))
 
 #### C-13 enrichment of mycos by species ####
 # Does the C-13 enrichment of mycorrhizas depend on the species
@@ -83,9 +99,53 @@ excluding_mixed = together[-grep("MIXED", together$competitors),]
 # with C labeling group "as a covariate." Does this mean as a random effect?
 
 # Plant ID and C-13 labeling batch should  be random effects here.
-mymodel = lmer((mycorrhizas.APE13C) ~ compartment_fungus + versus + N_level + (1|Plant) + (1|Batch), data = nonm)
+# Ideally, I'd have a random slope for each,
+# but a random intercept is all I can do with my dataset
+# and is probably reasonable.
 
-mymodel = lmer((mycorrhizas.APE13C) ~ compartment_fungus * versus * N_level + (1|Plant) + (1|Batch), data = nonm)
-summary(mymodel)
+# Let's try an LRT
 
-excludingmixedmodel = lmer((mycorrhizas.APE13C) ~ compartment_fungus * versus * N_level + (1|Plant) + (1|Batch), data = excluding_mixed)
+## trying with transformed data
+c13.null = lmer(transmycoC13 ~ compartment_fungus +(1|Plant) + (1|Batch), 
+                REML = FALSE,
+                data = excluding_mixed)
+c13.withversus = lmer(transmycoC13 ~ compartment_fungus + versus +(1|Plant) + (1|Batch), 
+                      REML = FALSE,
+                      data = excluding_mixed)
+c13.withversusandint = lmer(transmycoC13 ~ compartment_fungus * versus +(1|Plant) + (1|Batch), 
+                      REML = FALSE,
+                      data = excluding_mixed)
+c13.vsandintandn = lmer(transmycoC13 ~ compartment_fungus * versus + N_level +(1|Plant) + (1|Batch), 
+                      REML = FALSE,
+                      data = excluding_mixed)
+
+c13.versusandnint = lmer(transmycoC13 ~ compartment_fungus * versus * N_level +(1|Plant) + (1|Batch), 
+                      REML = FALSE,
+                      data = excluding_mixed)
+c13.versusandnint = lmer(transmycoC13 ~ compartment_fungus * versus * N_level + (1|Batch) + (1|Plant), 
+                         REML = FALSE,
+                         data = excluding_mixed)
+# Okay actually even the above is working now.
+# I think my consistent failures before were
+# due to some weird problem with data filtering.
+# Hooray?
+
+anova(c13.null, c13.withversus)
+anova(c13.withversus, c13.versusandn)
+
+# Trying random slopes
+
+c13.null = lmer(mycoC13ppmexcess ~ compartment_fungus + (mycoC13ppmexcess|Batch), 
+                REML = FALSE,
+                data = excluding_mixed)
+# Error in eval_f(x, ...) : Downdated VtV is not positive definite
+
+#### Bayesian? ####
+require(blme)
+
+glmb = blmer(transmycoC13 ~ compartment_fungus + (1|Batch), data=excluding_mixed, 
+              fixef.prior = normal(cov = diag(9,3)))
+summary(glmb)
+
+glmb = blmer(transmycoC13 ~ compartment_fungus * versus * N_level + (1|Batch), data=excluding_mixed, 
+             fixef.prior = normal(cov = diag(9,3)))
